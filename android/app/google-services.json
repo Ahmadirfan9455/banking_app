@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "269700130298",
+    "project_id": "gen-lang-client-0735548844",
+    "storage_bucket": "gen-lang-client-0735548844.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:269700130298:android:d5eb0e6264257895473043",
+        "android_client_info": {
+          "package_name": "com.example.banking_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "269700130298-0igl21loqpcbscait4l6n95nc29m8t5d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGJKvvvNo6a8dnqMZW__JITCDzff0fZrI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "269700130298-0igl21loqpcbscait4l6n95nc29m8t5d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

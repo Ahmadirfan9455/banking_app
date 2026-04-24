@@ -41,48 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBy2oZNpYbG3_XmsUMewpzEvvdSp7OMlPQ',
-    appId: '1:269700130298:web:a8e052293512980b473043',
-    messagingSenderId: '269700130298',
-    projectId: 'gen-lang-client-0735548844',
-    authDomain: 'gen-lang-client-0735548844.firebaseapp.com',
-    storageBucket: 'gen-lang-client-0735548844.firebasestorage.app',
+    apiKey: 'AIzaSyDxG5bgrqENksHRfXHWAqOKByvLG_MP05w',
+    appId: '1:1087600511846:web:d20e7b1905d129d11e56a7',
+    messagingSenderId: '1087600511846',
+    projectId: 'banking-app-c5ae9',
+    authDomain: 'banking-app-c5ae9.firebaseapp.com',
+    storageBucket: 'banking-app-c5ae9.firebasestorage.app',
+    measurementId: 'G-JCRE8VLXP5',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBGJKvvvNo6a8dnqMZW__JITCDzff0fZrI',
-    appId: '1:269700130298:android:d5eb0e6264257895473043',
-    messagingSenderId: '269700130298',
-    projectId: 'gen-lang-client-0735548844',
-    storageBucket: 'gen-lang-client-0735548844.firebasestorage.app',
+    apiKey: 'AIzaSyCfjMRwMwmGOoNg8VAVWdm2HggXRSTJ3eE',
+    appId: '1:1087600511846:android:6fdca81aa7925bf91e56a7',
+    messagingSenderId: '1087600511846',
+    projectId: 'banking-app-c5ae9',
+    storageBucket: 'banking-app-c5ae9.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDO8KEP_s8LUTtNprBKYFjjTrqdTHnDyqk',
-    appId: '1:269700130298:ios:3c9eff74a1290d27473043',
-    messagingSenderId: '269700130298',
-    projectId: 'gen-lang-client-0735548844',
-    storageBucket: 'gen-lang-client-0735548844.firebasestorage.app',
-    iosClientId: '269700130298-3drqi6ae0il39gp12fft8k54jtk5qvjr.apps.googleusercontent.com',
+    apiKey: 'AIzaSyBWMRSc3_8odAs8mAREeNNGBWboFshPmzE',
+    appId: '1:1087600511846:ios:b893691cf066f0941e56a7',
+    messagingSenderId: '1087600511846',
+    projectId: 'banking-app-c5ae9',
+    storageBucket: 'banking-app-c5ae9.firebasestorage.app',
     iosBundleId: 'com.example.bankingApp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDO8KEP_s8LUTtNprBKYFjjTrqdTHnDyqk',
-    appId: '1:269700130298:ios:3c9eff74a1290d27473043',
-    messagingSenderId: '269700130298',
-    projectId: 'gen-lang-client-0735548844',
-    storageBucket: 'gen-lang-client-0735548844.firebasestorage.app',
-    iosClientId: '269700130298-3drqi6ae0il39gp12fft8k54jtk5qvjr.apps.googleusercontent.com',
+    apiKey: 'AIzaSyBWMRSc3_8odAs8mAREeNNGBWboFshPmzE',
+    appId: '1:1087600511846:ios:b893691cf066f0941e56a7',
+    messagingSenderId: '1087600511846',
+    projectId: 'banking-app-c5ae9',
+    storageBucket: 'banking-app-c5ae9.firebasestorage.app',
     iosBundleId: 'com.example.bankingApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBy2oZNpYbG3_XmsUMewpzEvvdSp7OMlPQ',
-    appId: '1:269700130298:web:37673eb9fc9307f4473043',
-    messagingSenderId: '269700130298',
-    projectId: 'gen-lang-client-0735548844',
-    authDomain: 'gen-lang-client-0735548844.firebaseapp.com',
-    storageBucket: 'gen-lang-client-0735548844.firebasestorage.app',
+    apiKey: 'AIzaSyDxG5bgrqENksHRfXHWAqOKByvLG_MP05w',
+    appId: '1:1087600511846:web:f154c50f8d1843e11e56a7',
+    messagingSenderId: '1087600511846',
+    projectId: 'banking-app-c5ae9',
+    authDomain: 'banking-app-c5ae9.firebaseapp.com',
+    storageBucket: 'banking-app-c5ae9.firebasestorage.app',
+    measurementId: 'G-1K64PBTGFV',
   );
 }

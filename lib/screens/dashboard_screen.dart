@@ -2,12 +2,19 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/animated_wrapper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -21,7 +28,8 @@ class DashboardScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),
@@ -40,57 +48,71 @@ class DashboardScreen extends StatelessWidget {
           ),
           SafeArea(
             child: ResponsiveContainer(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const FadeSlideAnimation(delay: 0.1, child: _GreetingWidget()),
-                    const SizedBox(height: 32),
-                    const FadeSlideAnimation(delay: 0.2, child: _BalanceCard()),
-                    const SizedBox(height: 32),
-                    FadeSlideAnimation(
-                      delay: 0.3,
-                      child: Text(
-                        'QUICK ACTIONS',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white.withOpacity(0.5),
-                          letterSpacing: 2,
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) return const Center(child: Text('Error', style: TextStyle(color: Colors.white)));
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+                  var userData = snapshot.data!.data() as Map<String, dynamic>?;
+                  if (userData == null) return const Center(child: Text('No Data', style: TextStyle(color: Colors.white)));
+
+                  String userName = userData['name'] ?? 'User';
+                  double balance = (userData['balance'] ?? 0.0).toDouble();
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FadeSlideAnimation(delay: 0.1, child: _GreetingWidget(name: userName)),
+                        const SizedBox(height: 32),
+                        FadeSlideAnimation(delay: 0.2, child: _BalanceCard(balance: balance)),
+                        const SizedBox(height: 32),
+                        FadeSlideAnimation(
+                          delay: 0.3,
+                          child: Text(
+                            'QUICK ACTIONS',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white.withOpacity(0.5),
+                              letterSpacing: 2,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    FadeSlideAnimation(
-                      delay: 0.4,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _QuickActionButton(icon: Icons.send_rounded, label: 'Send', iconColor: const Color(0xFF00FFC2), onTap: () => Navigator.pushNamed(context, '/send-money')),
-                          _QuickActionButton(icon: Icons.account_balance_wallet, label: 'Receive', iconColor: const Color(0xFF8B5CF6), onTap: () {}),
-                          _QuickActionButton(icon: Icons.receipt_long, label: 'Pay Bills', iconColor: const Color(0xFFFFB020), onTap: () {}),
-                          _QuickActionButton(icon: Icons.grid_view_rounded, label: 'More', iconColor: const Color(0xFF0284C7), onTap: () {}),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    FadeSlideAnimation(
-                      delay: 0.5,
-                      child: Text(
-                        'RECENT TRANSACTIONS',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white.withOpacity(0.5),
-                          letterSpacing: 2,
+                        const SizedBox(height: 16),
+                        FadeSlideAnimation(
+                          delay: 0.4,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _QuickActionButton(icon: Icons.send_rounded, label: 'Send', iconColor: const Color(0xFF00FFC2), onTap: () => Navigator.pushNamed(context, '/send-money')),
+                              _QuickActionButton(icon: Icons.account_balance_wallet, label: 'Receive', iconColor: const Color(0xFF8B5CF6), onTap: () {}),
+                              _QuickActionButton(icon: Icons.receipt_long, label: 'Pay Bills', iconColor: const Color(0xFFFFB020), onTap: () {}),
+                              _QuickActionButton(icon: Icons.grid_view_rounded, label: 'More', iconColor: const Color(0xFF0284C7), onTap: () {}),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 32),
+                        FadeSlideAnimation(
+                          delay: 0.5,
+                          child: Text(
+                            'RECENT TRANSACTIONS',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white.withOpacity(0.5),
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FadeSlideAnimation(delay: 0.6, child: _TransactionList(userEmail: userData['email'])),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    const FadeSlideAnimation(delay: 0.6, child: _TransactionList()),
-                  ],
-                ),
+                  );
+                }
               ),
             ),
           ),
@@ -101,7 +123,8 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _GreetingWidget extends StatelessWidget {
-  const _GreetingWidget({Key? key}) : super(key: key);
+  final String name;
+  const _GreetingWidget({Key? key, required this.name}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +147,7 @@ class _GreetingWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Welcome back,', style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6))),
-            const Text('Aura Citizen', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
+            Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
           ],
         ),
       ],
@@ -133,7 +156,8 @@ class _GreetingWidget extends StatelessWidget {
 }
 
 class _BalanceCard extends StatelessWidget {
-  const _BalanceCard({Key? key}) : super(key: key);
+  final double balance;
+  const _BalanceCard({Key? key, required this.balance}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -167,9 +191,9 @@ class _BalanceCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                '\$14,204.50',
-                style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 1),
+              Text(
+                '\$${balance.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 1),
               ),
               const SizedBox(height: 24),
               Row(
@@ -225,7 +249,8 @@ class _QuickActionButton extends StatelessWidget {
 }
 
 class _TransactionList extends StatelessWidget {
-  const _TransactionList({Key? key}) : super(key: key);
+  final String userEmail;
+  const _TransactionList({Key? key, required this.userEmail}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -240,14 +265,48 @@ class _TransactionList extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
-          child: Column(
-            children: [
-              _TransactionTile(icon: Icons.bolt, title: 'Server Hosting', date: 'Today, 2:30 PM', amount: '-\$120.00', isNegative: true, iconColor: const Color(0xFFFFB020)),
-              Divider(color: Colors.white.withOpacity(0.1)),
-              _TransactionTile(icon: Icons.work, title: 'Inbound Transfer', date: 'Yesterday, 9:00 AM', amount: '+\$4,500.00', isNegative: false, iconColor: const Color(0xFF00FFC2)),
-              Divider(color: Colors.white.withOpacity(0.1)),
-              _TransactionTile(icon: Icons.shopping_bag, title: 'Tech Procure', date: 'Oct 18, 10:00 AM', amount: '-\$1,299.00', isNegative: true, iconColor: const Color(0xFFFF5E5E)),
-            ],
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('transactions')
+                .where('participants', arrayContains: userEmail)
+                .orderBy('timestamp', descending: true)
+                .limit(5)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) return const Text('Error', style: TextStyle(color: Colors.white));
+              if (!snapshot.hasData) return const CircularProgressIndicator();
+
+              var docs = snapshot.data!.docs;
+              if (docs.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No recent transactions.', style: TextStyle(color: Colors.white54)),
+                );
+              }
+
+              return Column(
+                children: docs.map((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  bool isNegative = data['senderEmail'] == userEmail;
+                  String otherParty = isNegative ? data['receiverEmail'] : data['senderEmail'];
+                  double amount = (data['amount'] ?? 0.0).toDouble();
+                  DateTime date = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+
+                  return Column(
+                    children: [
+                      _TransactionTile(
+                        icon: isNegative ? Icons.call_made : Icons.call_received,
+                        title: isNegative ? 'To $otherParty' : 'From $otherParty',
+                        date: '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}',
+                        amount: '${isNegative ? '-' : '+'}\$${amount.toStringAsFixed(2)}',
+                        isNegative: isNegative,
+                        iconColor: isNegative ? const Color(0xFFFF5E5E) : const Color(0xFF00FFC2),
+                      ),
+                      if (doc != docs.last) Divider(color: Colors.white.withOpacity(0.1)),
+                    ],
+                  );
+                }).toList(),
+              );
+            }
           ),
         ),
       ),

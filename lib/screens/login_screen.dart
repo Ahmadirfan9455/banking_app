@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/animated_wrapper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:email_otp/email_otp.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -23,18 +26,86 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
-      if (!mounted) return;
+        // Fetch user role
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).get();
+        
+        if (userDoc.exists) {
+          String role = userDoc.get('role') ?? 'user';
+          
+          if (_isAdminMode && role != 'admin') {
+            throw Exception('Unauthorized: Not an admin');
+          }
 
-      setState(() {
-        _isLoading = false;
-      });
+          // --- REAL SMTP EMAIL OTP CONFIGURATION ---
+          EmailOTP.config(
+            appName: 'Aura Bank Vault',
+            otpType: OTPType.numeric,
+            emailTheme: EmailTheme.v5,
+          );
+          
+          // >>> TODO: USER MUST REPLACE THESE CREDENTIALS FOR REAL EMAILS TO SEND <<<
+          EmailOTP.setSMTP(
+            emailPort: EmailPort.port587,
+            secureType: SecureType.tls,
+            host: "smtp.gmail.com",
+            username: "your_email@gmail.com", 
+            password: "your_16_digit_app_password", 
+          );
 
-      if (_isAdminMode) {
-        Navigator.pushReplacementNamed(context, '/admin-dashboard');
-      } else {
-        Navigator.pushReplacementNamed(context, '/otp-verification');
+          await EmailOTP.sendOTP(email: _emailController.text.trim());
+
+          if (!mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OTP sent to your email.'),
+              backgroundColor: Color(0xFF00FFC2),
+            ),
+          );
+
+          // Pass the role to the OTP screen if needed, but we can fetch it there or use routes.
+          // Since the existing route just goes to OTP verification, we can push there.
+          // Wait, if it's admin, does it also need OTP? The old code did this:
+          // if (_isAdminMode) { Navigator.pushReplacementNamed(context, '/admin-dashboard'); }
+          // else { Navigator.pushReplacementNamed(context, '/otp-verification'); }
+          
+          if (_isAdminMode) {
+            Navigator.pushReplacementNamed(context, '/admin-dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/otp-verification');
+          }
+        } else {
+          throw Exception('User data not found');
+        }
+
+      } on FirebaseAuthException catch (e) {
+        String message = 'Authentication failed.';
+        if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+          message = 'Invalid credentials.';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: const Color(0xFFFF5E5E)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: const Color(0xFFFF5E5E)),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

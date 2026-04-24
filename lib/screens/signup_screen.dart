@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:email_otp/email_otp.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/animated_wrapper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
@@ -52,6 +53,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
         // Send the real 6-digit email
         await EmailOTP.sendOTP(email: _emailController.text.trim());
+
+        // Save user to Firestore
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'uid': userCredential.user!.uid,
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'balance': 1000.0, // Give some initial balance
+          'role': 'user', // Default role is user
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
         if (!mounted) return;
         

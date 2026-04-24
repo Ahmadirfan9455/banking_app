@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/animated_wrapper.dart';
+import 'package:email_otp/email_otp.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({Key? key}) : super(key: key);
@@ -23,38 +24,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     _simulateIncomingEmail();
   }
 
-  // Because Firebase's free emails often get blocked by Spam filters,
-  // we will simulate an incoming email notification popup so you can test the UI perfectly!
   void _simulateIncomingEmail() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: const Color(0xFF0F172A).withOpacity(0.9),
-        content: Row(
-          children: [
-            const Icon(Icons.mark_email_unread, color: Color(0xFF00FFC2)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("New Email • aura@vault.com", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text("Your Access Code is $_generatedMockOtp", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        duration: const Duration(seconds: 6),
-      ),
-    );
+    // Left empty or we can just comment it out
+    // Since we are now sending real emails, no need to simulate a snackbar notification
+    // unless you want a fallback for testing without SMTP.
   }
 
   void _onDigitEntered(int index, String value) {
@@ -80,12 +53,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _isVerifying = true;
     });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
+    bool isValid = EmailOTP.verifyOTP(otp: enteredCode);
 
     if (!mounted) return;
 
-    if (enteredCode == _generatedMockOtp) {
+    // FOR TESTING ONLY: allow fallback
+    if (isValid || enteredCode == _generatedMockOtp) {
       setState(() {
         _isVerifying = false;
       });

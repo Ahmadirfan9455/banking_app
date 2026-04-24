@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../widgets/responsive_container.dart';
 import '../widgets/animated_wrapper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SendMoneyScreen extends StatefulWidget {
   const SendMoneyScreen({Key? key}) : super(key: key);
@@ -26,19 +28,95 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       return;
     }
 
+    double? amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid amount.'),
+          backgroundColor: Color(0xFFFF5E5E),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("User not authenticated.");
 
-    if (!mounted) return;
+      final db = FirebaseFirestore.instance;
+      
+      // Find receiver by email
+      String receiverEmail = _recipientController.text.trim();
+      var receiverQuery = await db.collection('users').where('email', isEqualTo: receiverEmail).limit(1).get();
+      
+      if (receiverQuery.docs.isEmpty) {
+        throw Exception("Recipient not found.");
+      }
+      
+      var receiverDocRef = receiverQuery.docs.first.reference;
+      var senderDocRef = db.collection('users').doc(user.uid);
 
-    setState(() {
-      _isProcessing = false;
-    });
+      if (receiverDocRef.id == senderDocRef.id) {
+        throw Exception("Cannot send money to yourself.");
+      }
 
-    _showSuccessDialog();
+      await db.runTransaction((transaction) async {
+        DocumentSnapshot senderSnapshot = await transaction.get(senderDocRef);
+        DocumentSnapshot receiverSnapshot = await transaction.get(receiverDocRef);
+
+        if (!senderSnapshot.exists || !receiverSnapshot.exists) {
+          throw Exception("Sender or recipient data corrupted.");
+        }
+
+        double senderBalance = (senderSnapshot.get('balance') ?? 0.0).toDouble();
+        double receiverBalance = (receiverSnapshot.get('balance') ?? 0.0).toDouble();
+
+        if (senderBalance < amount) {
+          throw Exception("Insufficient funds.");
+        }
+
+        // Update balances
+        transaction.update(senderDocRef, {'balance': senderBalance - amount});
+        transaction.update(receiverDocRef, {'balance': receiverBalance + amount});
+
+        // Log transaction
+        DocumentReference txRef = db.collection('transactions').doc();
+        transaction.set(txRef, {
+          'id': txRef.id,
+          'senderId': user.uid,
+          'senderEmail': senderSnapshot.get('email'),
+          'receiverId': receiverSnapshot.get('uid'),
+          'receiverEmail': receiverEmail,
+          'amount': amount,
+          'participants': [senderSnapshot.get('email'), receiverEmail],
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      _showSuccessDialog();
+
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll("Exception: ", "")),
+          backgroundColor: const Color(0xFFFF5E5E),
+        ),
+      );
+    }
   }
 
   void _showSuccessDialog() {
@@ -164,12 +242,22 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: Colors.white.withOpacity(0.1)),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Available Liquidity', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
-                                const Text('\$14,204.50', style: TextStyle(color: Color(0xFF00FFC2), fontSize: 18, fontWeight: FontWeight.bold)),
-                              ],
+                            child: StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance.collection('users')
+                                  .doc(FirebaseAuth.instance.currentUser?.uid).snapshots(),
+                              builder: (context, snapshot) {
+                                double balance = 0.0;
+                                if (snapshot.hasData && snapshot.data!.exists) {
+                                  balance = (snapshot.data!.get('balance') ?? 0.0).toDouble();
+                                }
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Available Liquidity', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
+                                    Text('\$${balance.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFF00FFC2), fontSize: 18, fontWeight: FontWeight.bold)),
+                                  ],
+                                );
+                              }
                             ),
                           ),
                         ),

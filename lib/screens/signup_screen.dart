@@ -35,6 +35,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
         await userCredential.user?.updateDisplayName(_nameController.text.trim());
         
+        // Save user to Firestore first!
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'uid': userCredential.user!.uid,
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'balance': 1000.0, // Give some initial balance
+          'role': 'user', // Default role is user
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
         // --- REAL SMTP EMAIL OTP CONFIGURATION ---
         EmailOTP.config(
           appName: 'Aura Bank Vault',
@@ -51,18 +61,13 @@ class _SignupScreenState extends State<SignupScreen> {
           password: "your_16_digit_app_password", 
         );
 
-        // Send the real 6-digit email
-        await EmailOTP.sendOTP(email: _emailController.text.trim());
-
-        // Save user to Firestore
-        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-          'uid': userCredential.user!.uid,
-          'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'balance': 1000.0, // Give some initial balance
-          'role': 'user', // Default role is user
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        try {
+          // Send the real 6-digit email
+          await EmailOTP.sendOTP(email: _emailController.text.trim());
+        } catch (smtpError) {
+          debugPrint("SMTP Error: $smtpError");
+          // Ignore the error for now so user can proceed testing with fallback 840291
+        }
 
         if (!mounted) return;
         
@@ -86,6 +91,12 @@ class _SignupScreenState extends State<SignupScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message), backgroundColor: const Color(0xFFFF5E5E)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: const Color(0xFFFF5E5E)),
           );
         }
       } finally {
